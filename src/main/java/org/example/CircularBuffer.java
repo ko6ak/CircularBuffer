@@ -2,34 +2,33 @@ package org.example;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class CircularBuffer<T> {
     public static final String EMPTY_BUFFER = "Buffer is empty!";
 
     private final int n;
     private final List<T> buffer;
-    private final AtomicInteger writeIndex;
-    private final AtomicInteger readIndex;
+    private int writeIndex;
+    private int readIndex;
 
     public CircularBuffer(int n) {
         this.n = n;
-        writeIndex = new AtomicInteger(0);
-        readIndex = new AtomicInteger(0);
+        writeIndex = 0;
+        readIndex = 0;
         buffer = new CopyOnWriteArrayList<>();
     }
 
-    public void put(T item) {
-        if (buffer.size() == n) buffer.set(writeIndex.get(), item);
+    public synchronized void put(T item) {
+        if (buffer.size() == n) buffer.set(writeIndex, item);
         else buffer.add(item);
-        writeIndex.set(writeIndex.incrementAndGet() % n);
+        writeIndex = (writeIndex + 1) % n;
     }
 
-    public T get() {
+    public synchronized T get() {
         if (buffer.isEmpty()) throw new EmptyBufferException(EMPTY_BUFFER);
-        if (buffer.size() <= readIndex.get()) return null;
-        T item = buffer.get(readIndex.get());
-        readIndex.set(readIndex.incrementAndGet() % n);
+        if (buffer.size() <= readIndex) return null;
+        T item = buffer.get(readIndex);
+        readIndex = (readIndex + 1) % n;
         return item;
     }
 
